@@ -5,7 +5,7 @@
 // =====================================================
 
 // Si algún día hay problemas con versiones viejas, cambia v1 por v2, v3...
-const NOMBRE_CACHE = "gastos-v1";
+const NOMBRE_CACHE = "gastos-v2";
 
 const ARCHIVOS_APP = [
   "./",
@@ -48,7 +48,11 @@ self.addEventListener("fetch", (evento) => {
   if (pedido.method !== "GET" || url.origin !== self.location.origin) return;
 
   evento.respondWith(
-    fetch(pedido)
+    // cache: "no-cache" = preguntar SIEMPRE al servidor si hay versión nueva,
+    // sin usar la copia temporal del navegador (GitHub permite guardarla 10 min).
+    // Usamos pedido.url (y no pedido) porque a un pedido de página completa
+    // no se le pueden cambiar opciones: el navegador daría error.
+    fetch(pedido.url, { cache: "no-cache" })
       .then((respuesta) => {
         // Llegó de internet: actualizamos la copia y la entregamos.
         const copia = respuesta.clone();
