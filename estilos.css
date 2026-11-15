@@ -1,0 +1,237 @@
+/* ===== Base ===== */
+* {
+  box-sizing: border-box;   /* el ancho incluye bordes y relleno: más fácil de calcular */
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: #f4f5f7;
+  color: #1f2933;
+}
+
+/* ===== Pantallas ===== */
+.pantalla {
+  max-width: 480px;         /* en computador no se estira de lado a lado */
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+.oculta {
+  display: none !important; /* JavaScript pone o quita esta clase para mostrar/ocultar */
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+h2 {
+  margin: 0 0 16px;
+  font-size: 20px;
+}
+
+/* ===== Tarjeta (caja blanca) ===== */
+.tarjeta {
+  margin-top: 20px;
+  padding: 20px 16px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+/* ===== Formulario ===== */
+label,
+.etiqueta {
+  display: block;
+  margin: 16px 0 6px;
+  font-weight: 600;
+}
+
+input,
+select {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;          /* 16px o más evita que el iPhone haga zoom al escribir */
+  border: 1px solid #c3c8cf;
+  border-radius: 8px;
+  background: #fff;
+  color: inherit;
+}
+
+/* Los botones redondos (radio) no deben estirarse como los otros campos */
+input[type="radio"] {
+  width: auto;
+  margin: 0;
+  accent-color: #2f6fde;
+}
+
+/* ===== Selector de opciones (Gasto / Pago, formas de dividir) ===== */
+.selector {
+  display: flex;
+  gap: 8px;
+}
+
+.selector.vertical {
+  flex-direction: column;
+}
+
+.opcion {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 12px;
+  font-weight: 500;
+  border: 1px solid #c3c8cf;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* La opción elegida se destaca con borde y fondo azul claro */
+.opcion:has(input:checked) {
+  border-color: #2f6fde;
+  background: #eaf1fd;
+}
+
+/* ===== Botones ===== */
+button {
+  width: 100%;
+  margin-top: 24px;
+  padding: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  background: #2f6fde;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.6;             /* se ve "apagado" mientras espera respuesta */
+}
+
+.boton-secundario {
+  width: auto;
+  margin: 0;
+  padding: 8px 14px;
+  color: #2f6fde;
+  background: transparent;
+  border: 1px solid #2f6fde;
+}
+
+/* ===== Mensajes ===== */
+.resumen {
+  margin: 16px 0 0;
+  padding: 10px 12px;
+  background: #f4f5f7;
+  border-radius: 8px;
+}
+
+.resumen:empty {
+  display: none;            /* si no hay texto, la caja no se muestra */
+}
+
+.mensaje,
+.error {
+  min-height: 1.2em;        /* reserva el espacio para que nada "salte" al aparecer */
+  margin: 12px 0 0;
+  font-weight: 600;
+}
+
+.error {
+  color: #c62828;
+}
+
+.exito {
+  color: #2e7d32;
+}
+
+/* ===== Saldo ===== */
+.saldo {
+  text-align: center;
+}
+
+.saldo-titulo {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #616e7c;
+}
+
+.saldo-texto {
+  margin: 8px 0 0;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+/* ===== Lista de movimientos ===== */
+.lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;         /* sin viñetas */
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #e4e7eb;
+}
+
+.item:last-child {
+  border-bottom: none;
+}
+
+.item-info {
+  flex: 1;                  /* ocupa todo el espacio que sobra */
+  min-width: 0;             /* permite que el texto largo se corte en vez de empujar */
+}
+
+.item-descripcion {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.item-detalle {
+  margin-top: 2px;
+  font-size: 14px;
+  color: #616e7c;
+}
+
+.item-monto {
+  font-weight: 700;
+  white-space: nowrap;      /* "$24.990" nunca se parte en dos líneas */
+}
+
+.boton-borrar {
+  width: auto;
+  margin: 0;
+  padding: 6px 10px;
+  font-size: 14px;
+  color: #c62828;
+  background: transparent;
+  border: 1px solid #c62828;
+}
+
+.nota {
+  margin: 12px 0 0;
+  font-size: 14px;
+  color: #616e7c;
+  text-align: center;
+}
+
+.nota:empty {
+  display: none;
+}
+
+/* ===== Barra superior ===== */
+.barra {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+}

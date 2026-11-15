@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <!-- Hace que la página se vea bien en el teléfono (sin zoom raro) -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gastos Comunes</title>
+  <link rel="stylesheet" href="estilos.css">
+
+  <!-- Para que se pueda instalar como app -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2f6fde">
+  <!-- Extras para iPhone (Safari no lee todo del manifest) -->
+  <link rel="apple-touch-icon" href="icono-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Gastos">
+</head>
+<body>
+
+  <!-- ===== PANTALLA 1: INICIO DE SESIÓN ===== -->
+  <section id="pantalla-login" class="pantalla oculta">
+    <h1>Gastos Comunes</h1>
+    <form id="form-login">
+      <label for="login-correo">Correo</label>
+      <input type="email" id="login-correo" required autocomplete="email">
+
+      <label for="login-clave">Contraseña</label>
+      <input type="password" id="login-clave" required autocomplete="current-password">
+
+      <button type="submit" id="boton-entrar">Entrar</button>
+      <p id="login-error" class="error"></p>
+    </form>
+  </section>
+
+  <!-- ===== PANTALLA 2: PRINCIPAL ===== -->
+  <section id="pantalla-principal" class="pantalla oculta">
+    <header class="barra">
+      <span id="saludo"></span>
+      <button id="boton-salir" class="boton-secundario">Salir</button>
+    </header>
+
+    <!-- ----- Saldo: quién le debe a quién ----- -->
+    <div class="tarjeta saldo">
+      <span class="saldo-titulo">Saldo</span>
+      <p id="saldo-texto" class="saldo-texto">Cargando…</p>
+    </div>
+
+    <!-- ----- Formulario para anotar un movimiento ----- -->
+    <form id="form-movimiento" class="tarjeta">
+      <h2>Nuevo movimiento</h2>
+
+      <!-- Tipo: gasto o pago de deuda -->
+      <div class="selector">
+        <label class="opcion"><input type="radio" name="tipo" value="gasto" checked> Gasto</label>
+        <label class="opcion"><input type="radio" name="tipo" value="pago"> Pago de deuda</label>
+      </div>
+
+      <label for="mov-descripcion">Descripción</label>
+      <input type="text" id="mov-descripcion" maxlength="80" placeholder="Ej: Supermercado">
+
+      <label for="mov-monto">Monto ($)</label>
+      <input type="text" id="mov-monto" inputmode="numeric" placeholder="0">
+
+      <label for="mov-fecha">Fecha</label>
+      <input type="date" id="mov-fecha" required>
+
+      <label for="mov-pagador" id="etiqueta-pagador">¿Quién pagó?</label>
+      <select id="mov-pagador"></select>
+
+      <!-- Solo para gastos: cómo se divide -->
+      <div id="bloque-division">
+        <span class="etiqueta">¿Cómo se divide?</span>
+        <div class="selector vertical">
+          <label class="opcion"><input type="radio" name="division" value="mitad" checked> Mitad y mitad</label>
+          <label class="opcion"><input type="radio" name="division" value="total"> Todo le corresponde al otro</label>
+          <label class="opcion"><input type="radio" name="division" value="personalizada"> Personalizada</label>
+        </div>
+
+        <!-- Solo si la división es personalizada -->
+        <div id="bloque-personalizada" class="oculta">
+          <label for="mov-parte" id="etiqueta-parte">Parte del otro ($)</label>
+          <input type="text" id="mov-parte" inputmode="numeric" placeholder="0">
+        </div>
+      </div>
+
+      <!-- Frase que explica qué va a pasar con la deuda -->
+      <p id="resumen" class="resumen"></p>
+
+      <button type="submit" id="boton-guardar">Guardar</button>
+      <p id="mov-mensaje" class="mensaje"></p>
+    </form>
+
+    <!-- ----- Lista de movimientos ----- -->
+    <div class="tarjeta">
+      <h2>Movimientos</h2>
+      <ul id="lista-movimientos" class="lista"></ul>
+      <p id="lista-nota" class="nota"></p>
+    </div>
+  </section>
+
+  <!-- Librería de Supabase (se descarga desde internet) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Nuestros archivos: primero la configuración, después la lógica -->
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
