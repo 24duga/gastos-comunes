@@ -46,6 +46,14 @@ const textoSaldo      = document.getElementById("saldo-texto");
 const listaMov        = document.getElementById("lista-movimientos");
 const textoNotaLista  = document.getElementById("lista-nota");
 
+// --- Registro de borrados y aviso "Deshacer" ---
+const listaBorrados         = document.getElementById("lista-borrados");
+const textoCantidadBorrados = document.getElementById("cantidad-borrados");
+const textoNotaBorrados     = document.getElementById("borrados-nota");
+const aviso                 = document.getElementById("aviso");
+const textoAviso            = document.getElementById("aviso-texto");
+const botonDeshacer         = document.getElementById("aviso-deshacer");
+
 // Cuántos movimientos mostrar en la lista (el saldo usa TODOS igual).
 const MAXIMO_EN_LISTA = 50;
 
@@ -322,6 +330,32 @@ function crearElemento(etiqueta, clase, texto) {
   return el;
 }
 
+// Convierte un instante con hora (ej. borrado_en) en "15/11/2026, 16:20".
+// Aquí SÍ usamos new Date: una columna timestamptz incluye la zona horaria,
+// así que el teléfono la convierte bien a la hora de Chile.
+function formatoFechaHora(instante) {
+  return new Date(instante).toLocaleString("es-CL", {
+    day: "2-digit", month: "2-digit", year: "numeric",
+    hour: "2-digit", minute: "2-digit",
+  });
+}
+
+// Arma una fila de la lista. Sirve tanto para los movimientos vigentes
+// (botón "Borrar") como para los borrados (botón "Restaurar").
+function crearItem(m, detalle, textoBoton, claseBoton, accion) {
+  const item = crearElemento("li", "item");
+  const info = crearElemento("div", "item-info");
+  info.append(
+    crearElemento("div", "item-descripcion", m.descripcion),
+    crearElemento("div", "item-detalle", detalle)
+  );
+  const monto = crearElemento("span", "item-monto", formatoPesos(m.monto));
+  const boton = crearElemento("button", claseBoton, textoBoton);
+  boton.addEventListener("click", () => accion(m));
+  item.append(info, monto, boton);
+  return item;
+}
+
 function dibujarLista(movimientos) {
   listaMov.innerHTML = "";   // vaciar la lista antes de volver a dibujarla
 
@@ -331,18 +365,7 @@ function dibujarLista(movimientos) {
   }
 
   movimientos.slice(0, MAXIMO_EN_LISTA).forEach((m) => {
-    const item  = crearElemento("li", "item");
-    const info  = crearElemento("div", "item-info");
-    info.append(
-      crearElemento("div", "item-descripcion", m.descripcion),
-      crearElemento("div", "item-detalle", detalleDe(m))
-    );
-    const monto = crearElemento("span", "item-monto", formatoPesos(m.monto));
-    const borrar = crearElemento("button", "boton-borrar", "Borrar");
-    borrar.addEventListener("click", () => borrarMovimiento(m));
-
-    item.append(info, monto, borrar);
-    listaMov.append(item);
+    listaMov.append(crearItem(m, detalleDe(m), "Borrar", "boton-borrar", borrarMovimiento));
   });
 
   textoNotaLista.textContent = movimientos.length > MAXIMO_EN_LISTA
@@ -350,12 +373,41 @@ function dibujarLista(movimientos) {
     : "";
 }
 
-// Junta todo: traer, calcular, mostrar.
+// Registro de borrados: qué se borró, quién y cuándo.
+function dibujarBorrados(borrados) {
+  listaBorrados.innerHTML = "";
+  textoCantidadBorrados.textContent = borrados.length;
+
+  if (borrados.length === 0) {
+    textoNotaBorrados.textContent = "No se ha borrado nada.";
+    return;
+  }
+
+  borrados.slice(0, MAXIMO_EN_LISTA).forEach((m) => {
+    const detalle =
+      `Borrado por ${nombreDe(m.borrado_por)} el ${formatoFechaHora(m.borrado_en)} · ` + detalleDe(m);
+    listaBorrados.append(crearItem(m, detalle, "Restaurar", "boton-restaurar", restaurarMovimiento));
+  });
+
+  textoNotaBorrados.textContent = borrados.length > MAXIMO_EN_LISTA
+    ? `Mostrando los ${MAXIMO_EN_LISTA} borrados más recientes de ${borrados.length}.`
+    : "";
+}
+
+// Junta todo: traer, separar vigentes de borrados, calcular, mostrar.
 async function cargarMovimientos() {
   try {
-    const movimientos = await traerTodosLosMovimientos();
-    mostrarSaldo(calcularSaldo(movimientos));
-    dibujarLista(movimientos);
+    const todos = await traerTodosLosMovimientos();
+
+    // filter = "quedarse solo con los que cumplen la condición"
+    const vigentes = todos.filter((m) => m.borrado_en === null);
+    const borrados = todos
+      .filter((m) => m.borrado_en !== null)
+      .sort((a, b) => b.borrado_en.localeCompare(a.borrado_en));   // último borrado primero
+
+    mostrarSaldo(calcularSaldo(vigentes));   // ¡el saldo solo cuenta los vigentes!
+    dibujarLista(vigentes);
+    dibujarBorrados(borrados);
   } catch (error) {
     console.error(error);
     textoSaldo.textContent = "No se pudo cargar";
@@ -363,19 +415,65 @@ async function cargarMovimientos() {
   }
 }
 
-// Borrar un movimiento (pidiendo confirmación antes).
+// "Borrar" ya no elimina la fila: le pone fecha y autor de borrado.
+// La fila sigue en la base de datos, así que siempre se puede recuperar.
 async function borrarMovimiento(m) {
   const pregunta = `¿Borrar "${m.descripcion}" de ${formatoPesos(m.monto)}?`;
   if (!confirm(pregunta)) return;
 
-  const { error } = await cliente.from("movimientos").delete().eq("id", m.id);
+  const { error } = await cliente
+    .from("movimientos")
+    .update({ borrado_en: new Date().toISOString(), borrado_por: idActual })
+    .eq("id", m.id);
+
   if (error) {
     console.error(error);
     alert("No se pudo borrar. Intenta de nuevo.");
     return;
   }
   cargarMovimientos();
+  mostrarAvisoDeshacer(m);
 }
+
+// Restaurar = quitarle la marca de borrado.
+async function restaurarMovimiento(m) {
+  const { error } = await cliente
+    .from("movimientos")
+    .update({ borrado_en: null, borrado_por: null })
+    .eq("id", m.id);
+
+  if (error) {
+    console.error(error);
+    alert("No se pudo restaurar. Intenta de nuevo.");
+    return;
+  }
+  ocultarAviso();
+  cargarMovimientos();
+}
+
+// ----- Aviso inferior con el botón "Deshacer" -----
+let movimientoRecienBorrado = null;
+let temporizadorAviso = null;
+const SEGUNDOS_AVISO = 8;
+
+function mostrarAvisoDeshacer(m) {
+  movimientoRecienBorrado = m;
+  textoAviso.textContent = `Se borró "${m.descripcion}"`;
+  aviso.classList.remove("oculta");
+
+  clearTimeout(temporizadorAviso);   // si había otro aviso, se reemplaza
+  temporizadorAviso = setTimeout(ocultarAviso, SEGUNDOS_AVISO * 1000);
+}
+
+function ocultarAviso() {
+  clearTimeout(temporizadorAviso);
+  aviso.classList.add("oculta");
+  movimientoRecienBorrado = null;
+}
+
+botonDeshacer.addEventListener("click", () => {
+  if (movimientoRecienBorrado) restaurarMovimiento(movimientoRecienBorrado);
+});
 
 
 // =====================================================
@@ -414,6 +512,7 @@ function actualizarSegunSesion(sesion) {
   if (!sesion) {
     idActual = null;
     desconectarTiempoReal();
+    ocultarAviso();
     mostrarPantalla("login");
     return;
   }

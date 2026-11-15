@@ -96,6 +96,19 @@
       <ul id="lista-movimientos" class="lista"></ul>
       <p id="lista-nota" class="nota"></p>
     </div>
+
+    <!-- ----- Registro de borrados (se abre y cierra con un toque) ----- -->
+    <details class="tarjeta borrados">
+      <summary>Movimientos borrados (<span id="cantidad-borrados">0</span>)</summary>
+      <ul id="lista-borrados" class="lista"></ul>
+      <p id="borrados-nota" class="nota"></p>
+    </details>
+
+    <!-- ----- Aviso inferior con "Deshacer" ----- -->
+    <div id="aviso" class="aviso oculta">
+      <span id="aviso-texto"></span>
+      <button id="aviso-deshacer" class="boton-deshacer">Deshacer</button>
+    </div>
   </section>
 
   <!-- Librería de Supabase (se descarga desde internet) -->

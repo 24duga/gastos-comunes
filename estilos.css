@@ -217,6 +217,63 @@ button:disabled {
   border: 1px solid #c62828;
 }
 
+.boton-restaurar {
+  width: auto;
+  margin: 0;
+  padding: 6px 10px;
+  font-size: 14px;
+  color: #2f6fde;
+  background: transparent;
+  border: 1px solid #2f6fde;
+}
+
+/* ===== Registro de borrados ===== */
+.borrados summary {
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.borrados[open] summary {
+  margin-bottom: 8px;
+}
+
+/* ===== Aviso inferior "Se borró... Deshacer" ===== */
+.pantalla {
+  padding-bottom: 96px;     /* espacio para que el aviso no tape lo último de la lista */
+}
+
+.aviso {
+  position: fixed;          /* queda pegado a la pantalla aunque se haga scroll */
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  max-width: 448px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  color: #fff;
+  background: #1f2933;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.aviso span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.boton-deshacer {
+  width: auto;
+  margin: 0;
+  padding: 8px 14px;
+  font-weight: 700;
+  color: #1f2933;
+  background: #fff;
+}
+
 .nota {
   margin: 12px 0 0;
   font-size: 14px;
