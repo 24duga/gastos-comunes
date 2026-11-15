@@ -42,8 +42,15 @@
     <!-- ===== VISTA: INICIO (saldo + menú) ===== -->
     <div id="vista-inicio" class="vista">
       <div class="tarjeta saldo">
-        <span class="saldo-titulo">Saldo</span>
+        <span class="saldo-titulo">Deuda a la fecha</span>
         <p id="saldo-texto" class="saldo-texto">Cargando…</p>
+        <p id="saldo-detalle" class="saldo-detalle"></p>
+      </div>
+
+      <!-- Lo que se debe pagar en los meses que vienen (cuotas, pagos futuros) -->
+      <div id="bloque-proximos" class="tarjeta oculta">
+        <h2>Próximos meses</h2>
+        <ul id="lista-proximos" class="lista-meses"></ul>
       </div>
 
       <nav class="menu">
@@ -103,6 +110,23 @@
             <label for="mov-parte" id="etiqueta-parte">Parte del otro ($)</label>
             <input type="text" id="mov-parte" inputmode="numeric" placeholder="0">
           </div>
+        </div>
+
+        <!-- Solo para gastos: cuotas y mes de pago -->
+        <div id="bloque-cuotas">
+          <span class="etiqueta">¿Pagar en cuotas?</span>
+          <div class="selector">
+            <label class="opcion"><input type="radio" name="en-cuotas" value="no" checked> No</label>
+            <label class="opcion"><input type="radio" name="en-cuotas" value="si"> Sí</label>
+          </div>
+
+          <div id="bloque-num-cuotas" class="oculta">
+            <label for="mov-cuotas">Cantidad de cuotas</label>
+            <input type="number" id="mov-cuotas" inputmode="numeric" min="2" max="60" step="1" placeholder="Ej: 6">
+          </div>
+
+          <label for="mov-mes" id="etiqueta-mes">Mes de pago</label>
+          <input type="month" id="mov-mes">
         </div>
 
         <!-- Frase que explica qué va a pasar con la deuda -->

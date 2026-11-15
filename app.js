@@ -38,11 +38,19 @@ const bloquePersonalizada = document.getElementById("bloque-personalizada");
 const etiquetaParte       = document.getElementById("etiqueta-parte");
 const inputParte          = document.getElementById("mov-parte");
 const textoResumen        = document.getElementById("resumen");
+const bloqueCuotas        = document.getElementById("bloque-cuotas");
+const bloqueNumCuotas     = document.getElementById("bloque-num-cuotas");
+const inputCuotas         = document.getElementById("mov-cuotas");
+const etiquetaMes         = document.getElementById("etiqueta-mes");
+const inputMes            = document.getElementById("mov-mes");
 const botonGuardar        = document.getElementById("boton-guardar");
 const textoMensaje        = document.getElementById("mov-mensaje");
 
 // --- Saldo y lista ---
 const textoSaldo      = document.getElementById("saldo-texto");
+const textoSaldoDet   = document.getElementById("saldo-detalle");
+const bloqueProximos  = document.getElementById("bloque-proximos");
+const listaProximos   = document.getElementById("lista-proximos");
 const listaMov        = document.getElementById("lista-movimientos");
 const textoNotaLista  = document.getElementById("lista-nota");
 
@@ -98,6 +106,64 @@ function hoy() {
   return `${d.getFullYear()}-${mes}-${dia}`;
 }
 
+// ----- Meses -----
+// Un mes se representa como el día 1 de ese mes: "2026-12-01".
+const NOMBRES_MES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio",
+                     "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+
+// "2026-11-15" → "2026-11-01"
+function mesDeFecha(fecha) {
+  return fecha.slice(0, 7) + "-01";
+}
+
+// Suma (o resta) meses: sumarMeses("2026-11-01", 3) → "2027-02-01".
+// Truco: contar los meses desde el año 0 (año × 12 + mes), sumar, y volver a separar.
+function sumarMeses(mes, cantidad) {
+  const [anio, numMes] = mes.split("-").map(Number);
+  const total = anio * 12 + (numMes - 1) + cantidad;
+  const anio2 = Math.floor(total / 12);
+  const mes2  = (total % 12) + 1;
+  return `${anio2}-${String(mes2).padStart(2, "0")}-01`;
+}
+
+// "2026-12-01" → "Diciembre 2026"
+function nombreMes(mes) {
+  const [anio, numMes] = mes.split("-").map(Number);
+  const nombre = NOMBRES_MES[numMes - 1];
+  return nombre[0].toUpperCase() + nombre.slice(1) + " " + anio;
+}
+
+// ----- Cuotas -----
+// Reparte un total en n cuotas redondeadas a la centena.
+// La última cuota absorbe la diferencia, así la suma da EXACTAMENTE el total.
+// dividirEnCuotas(450000, 7) → [64300, 64300, 64300, 64300, 64300, 64300, 64200]
+function dividirEnCuotas(total, n) {
+  if (n <= 1) return [total];
+  let base = Math.round(total / n / 100) * 100;
+  // Con montos muy chicos, redondear hacia arriba podría pasarse del total:
+  // en ese caso redondeamos hacia abajo.
+  if (base * (n - 1) > total) base = Math.floor(total / n / 100) * 100;
+  // Y si el monto es tan chico que la centena da 0, repartimos sin redondear.
+  if (base === 0) base = Math.floor(total / n);
+  const lista = Array(n - 1).fill(base);
+  lista.push(total - base * (n - 1));
+  return lista;
+}
+
+// Todas las cuotas de un movimiento: número, mes, valor de la cuota y parte del otro.
+// Un movimiento sin cuotas es simplemente "1 cuota".
+function cuotasDe(m) {
+  const n = m.cuotas || 1;
+  const montos = dividirEnCuotas(m.monto, n);
+  const partes = dividirEnCuotas(m.parte_otro, n);
+  return montos.map((monto, i) => ({
+    numero: i + 1,
+    mes:    sumarMeses(m.mes_inicio, i),
+    monto:  monto,
+    parte:  partes[i],
+  }));
+}
+
 // Devuelve el valor del botón redondo elegido en un grupo ("tipo" o "division").
 function valorElegido(nombreGrupo) {
   return document.querySelector(`input[name="${nombreGrupo}"]:checked`).value;
@@ -151,6 +217,29 @@ function calcularParteOtro() {
   return leerMonto(inputParte.value);                   // personalizada
 }
 
+// ¿El usuario cambió el mes a mano? Si es así, ya no lo cambiamos solos.
+let mesTocado = false;
+inputMes.addEventListener("input", () => { mesTocado = true; });
+
+function enCuotas() {
+  return valorElegido("en-cuotas") === "si";
+}
+
+function numeroDeCuotas() {
+  return enCuotas() ? (parseInt(inputCuotas.value, 10) || 0) : 1;
+}
+
+// Sin cuotas: el mes de la fecha. Con cuotas: el mes siguiente.
+function mesPorDefecto() {
+  const base = mesDeFecha(inputFecha.value || hoy());
+  return enCuotas() ? sumarMeses(base, 1) : base;
+}
+
+// El mes elegido en el formulario, como "AAAA-MM-01".
+function mesElegido() {
+  return inputMes.value ? inputMes.value + "-01" : mesPorDefecto();
+}
+
 // Ajusta lo que se ve en el formulario cada vez que algo cambia.
 function actualizarFormulario() {
   const esPago   = valorElegido("tipo") === "pago";
@@ -161,6 +250,12 @@ function actualizarFormulario() {
   // Mostrar u ocultar bloques
   bloqueDivision.classList.toggle("oculta", esPago);
   bloquePersonalizada.classList.toggle("oculta", esPago || division !== "personalizada");
+  bloqueCuotas.classList.toggle("oculta", esPago);
+  bloqueNumCuotas.classList.toggle("oculta", esPago || !enCuotas());
+
+  // Mes de pago: etiqueta y valor por defecto (si no lo cambiaron a mano)
+  etiquetaMes.textContent = enCuotas() ? "Mes de la primera cuota" : "Mes de pago";
+  if (!mesTocado) inputMes.value = mesPorDefecto().slice(0, 7);   // "2026-12-01" → "2026-12"
 
   // Textos que cambian según el tipo
   etiquetaPagador.textContent  = esPago ? "¿Quién transfiere?" : "¿Quién pagó?";
@@ -178,16 +273,37 @@ function actualizarFormulario() {
       `Se descuentan ${formatoPesos(monto)} de lo que ${nombreDe(pagador)} le debe a ${nombreDe(otro)}.`;
   } else if (parte > monto) {
     textoResumen.textContent = `⚠️ La parte de ${nombreDe(otro)} no puede ser mayor que el monto.`;
+  } else if (enCuotas()) {
+    const n = numeroDeCuotas();
+    if (n < 2 || n > 60) {
+      textoResumen.textContent = "Indica la cantidad de cuotas (entre 2 y 60).";
+      return;
+    }
+    // "Simulamos" el movimiento para calcular sus cuotas con la misma función de la lista.
+    const cuotas = cuotasDe({ monto: monto, parte_otro: parte, cuotas: n, mes_inicio: mesElegido() });
+    const primera = cuotas[0];
+    const ultima  = cuotas[cuotas.length - 1];
+    const lineas = [
+      `${nombreDe(otro)} queda debiendo ${formatoPesos(parte)} a ${nombreDe(pagador)}, en ${n} cuotas.`,
+      `Cuota: ${formatoPesos(primera.monto)} · Parte de ${nombreDe(otro)}: ${formatoPesos(primera.parte)} al mes.`,
+    ];
+    if (ultima.monto !== primera.monto || ultima.parte !== primera.parte) {
+      lineas.push(`Última cuota: ${formatoPesos(ultima.monto)} · Parte de ${nombreDe(otro)}: ${formatoPesos(ultima.parte)}.`);
+    }
+    lineas.push(`De ${nombreMes(primera.mes)} a ${nombreMes(ultima.mes)}.`);
+    textoResumen.textContent = lineas.join("\n");
   } else {
     textoResumen.textContent =
-      `${nombreDe(otro)} queda debiendo ${formatoPesos(parte)} a ${nombreDe(pagador)}.`;
+      `${nombreDe(otro)} queda debiendo ${formatoPesos(parte)} a ${nombreDe(pagador)}.\n` +
+      `Se paga en ${nombreMes(mesElegido())}.`;
   }
 }
 
 // Deja el formulario como nuevo, con los valores por defecto.
 function reiniciarFormulario() {
-  formMov.reset();                    // vuelve a "Gasto" y "Mitad y mitad"
+  formMov.reset();                    // vuelve a "Gasto", "Mitad y mitad" y "Sin cuotas"
   inputFecha.value = hoy();
+  mesTocado = false;                  // el mes vuelve a calcularse solo
   selectPagador.value = idActual; // por defecto, pagó quien está usando la app
   actualizarFormulario();
 }
@@ -195,6 +311,7 @@ function reiniciarFormulario() {
 // Mientras se escriben montos: poner puntos de miles y actualizar el resumen.
 inputMonto.addEventListener("input", () => { formatearCampo(inputMonto); actualizarFormulario(); });
 inputParte.addEventListener("input", () => { formatearCampo(inputParte); actualizarFormulario(); });
+inputCuotas.addEventListener("input", actualizarFormulario);
 
 // Cualquier cambio en botones redondos o en la lista "¿Quién pagó?".
 formMov.addEventListener("change", actualizarFormulario);
@@ -222,6 +339,15 @@ formMov.addEventListener("submit", async (evento) => {
   if (parte > monto) {
     return mostrarMensaje("La parte del otro no puede ser mayor que el monto.", true);
   }
+  if (tipo === "gasto" && enCuotas()) {
+    const n = numeroDeCuotas();
+    if (n < 2 || n > 60) {
+      return mostrarMensaje("La cantidad de cuotas debe ser entre 2 y 60.", true);
+    }
+  }
+  if (tipo === "gasto" && !inputMes.value) {
+    return mostrarMensaje("Elige el mes de pago.", true);
+  }
   if (tipo === "pago" && descripcion === "") {
     descripcion = "Pago de deuda";
   }
@@ -235,6 +361,9 @@ formMov.addEventListener("submit", async (evento) => {
     pagado_por:  selectPagador.value,
     division:    tipo === "pago" ? "total" : valorElegido("division"),
     parte_otro:  parte,
+    // Un pago de deuda cuenta en el mes en que se hace.
+    cuotas:      tipo === "pago" ? 1 : numeroDeCuotas(),
+    mes_inicio:  tipo === "pago" ? mesDeFecha(inputFecha.value) : mesElegido(),
   };
 
   botonGuardar.disabled = true;
@@ -286,28 +415,64 @@ async function traerTodosLosMovimientos() {
   return todos;
 }
 
-// Saldo desde el punto de vista de quien usa la app:
-// positivo = el otro me debe; negativo = yo le debo.
-function calcularSaldo(movimientos) {
-  let saldo = 0;
+// Saldos desde el punto de vista de quien usa la app
+// (positivo = el otro me debe; negativo = yo le debo):
+//  - aLaFecha: cuotas de este mes y de meses anteriores (lo que hay que pagar ya).
+//  - futuros:  un saldo por cada mes que viene, ej. { "2026-12-01": 37500, ... }
+function calcularSaldos(movimientos) {
+  const mesHoy = mesDeFecha(hoy());
+  let aLaFecha = 0;
+  const futuros = {};
+
   movimientos.forEach((m) => {
-    if (m.pagado_por === idActual) {
-      saldo += m.parte_otro;   // pagué yo: al otro le toca su parte
-    } else {
-      saldo -= m.parte_otro;   // pagó el otro: a mí me toca mi parte
-    }
+    const signo = m.pagado_por === idActual ? 1 : -1;   // pagué yo: +; pagó el otro: −
+    cuotasDe(m).forEach((c) => {
+      // Los meses "AAAA-MM-01" se pueden comparar como texto: "2026-11-01" < "2026-12-01"
+      if (c.mes <= mesHoy) {
+        aLaFecha += signo * c.parte;
+      } else {
+        futuros[c.mes] = (futuros[c.mes] || 0) + signo * c.parte;
+      }
+    });
   });
-  return saldo;
+  return { aLaFecha, futuros };
 }
 
-function mostrarSaldo(saldo) {
+// Frase para un saldo: "Camila te debe $X" / "Le debes $X a Camila" / "Están a mano ✓"
+function fraseSaldo(saldo, verbo) {
   const otro = nombreDe(otroDe(idActual));
-  if (saldo > 0) {
-    textoSaldo.textContent = `${otro} te debe ${formatoPesos(saldo)}`;
-  } else if (saldo < 0) {
-    textoSaldo.textContent = `Le debes ${formatoPesos(-saldo)} a ${otro}`;
-  } else {
-    textoSaldo.textContent = "Están a mano ✓";
+  if (saldo > 0) return verbo === "futuro" ? `${otro} te paga ${formatoPesos(saldo)}` : `${otro} te debe ${formatoPesos(saldo)}`;
+  if (saldo < 0) return verbo === "futuro" ? `Le pagas ${formatoPesos(-saldo)}` : `Le debes ${formatoPesos(-saldo)} a ${otro}`;
+  return "Están a mano ✓";
+}
+
+function mostrarSaldos({ aLaFecha, futuros }) {
+  textoSaldo.textContent = fraseSaldo(aLaFecha);
+  textoSaldoDet.textContent = `Incluye ${nombreMes(mesDeFecha(hoy())).toLowerCase()} y meses anteriores`;
+
+  // Próximos meses: solo los que tienen algo pendiente, en orden.
+  const meses = Object.keys(futuros).filter((mes) => futuros[mes] !== 0).sort();
+  listaProximos.innerHTML = "";
+  bloqueProximos.classList.toggle("oculta", meses.length === 0);
+
+  let totalFuturo = 0;
+  meses.forEach((mes) => {
+    totalFuturo += futuros[mes];
+    const fila = crearElemento("li", "fila-mes");
+    fila.append(
+      crearElemento("span", "mes", nombreMes(mes)),
+      crearElemento("span", "valor", fraseSaldo(futuros[mes], "futuro"))
+    );
+    listaProximos.append(fila);
+  });
+
+  if (meses.length > 1) {
+    const fila = crearElemento("li", "fila-mes total");
+    fila.append(
+      crearElemento("span", "mes", "Total por venir"),
+      crearElemento("span", "valor", fraseSaldo(totalFuturo, "futuro"))
+    );
+    listaProximos.append(fila);
   }
 }
 
@@ -318,9 +483,20 @@ function detalleDe(m) {
   const fecha   = formatoFecha(m.fecha);
 
   if (m.tipo === "pago") return `${fecha} · ${pagador} le pagó a ${otro}`;
-  if (m.division === "mitad") return `${fecha} · Pagó ${pagador} · Mitad y mitad`;
-  if (m.division === "total") return `${fecha} · Pagó ${pagador} · Todo de ${otro}`;
-  return `${fecha} · Pagó ${pagador} · Parte de ${otro}: ${formatoPesos(m.parte_otro)}`;
+
+  let texto;
+  if (m.division === "mitad")      texto = `${fecha} · Pagó ${pagador} · Mitad y mitad`;
+  else if (m.division === "total") texto = `${fecha} · Pagó ${pagador} · Todo de ${otro}`;
+  else texto = `${fecha} · Pagó ${pagador} · Parte de ${otro}: ${formatoPesos(m.parte_otro)}`;
+
+  // Agregar cuándo se paga (solo si hay cuotas o si no es el mes de la fecha)
+  if (m.cuotas > 1) {
+    const ultimo = sumarMeses(m.mes_inicio, m.cuotas - 1);
+    texto += ` · ${m.cuotas} cuotas: ${nombreMes(m.mes_inicio)} a ${nombreMes(ultimo)}`;
+  } else if (m.mes_inicio !== mesDeFecha(m.fecha)) {
+    texto += ` · Se paga en ${nombreMes(m.mes_inicio)}`;
+  }
+  return texto;
 }
 
 // Crea un elemento HTML con una clase y un texto (atajo para no repetir 3 líneas).
@@ -406,7 +582,7 @@ async function cargarMovimientos() {
       .filter((m) => m.borrado_en !== null)
       .sort((a, b) => b.borrado_en.localeCompare(a.borrado_en));   // último borrado primero
 
-    mostrarSaldo(calcularSaldo(vigentes));   // ¡el saldo solo cuenta los vigentes!
+    mostrarSaldos(calcularSaldos(vigentes));   // ¡el saldo solo cuenta los vigentes!
     dibujarLista(vigentes);
     dibujarBorrados(borrados);
     contadorMovimientos.textContent = vigentes.length;

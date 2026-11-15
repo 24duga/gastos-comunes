@@ -130,6 +130,10 @@ button:disabled {
   border-radius: 8px;
 }
 
+.resumen {
+  white-space: pre-line;    /* respeta los saltos de línea (\n) del texto */
+}
+
 .resumen:empty {
   display: none;            /* si no hay texto, la caja no se muestra */
 }
@@ -165,6 +169,44 @@ button:disabled {
   margin: 8px 0 0;
   font-size: 22px;
   font-weight: 700;
+}
+
+.saldo-detalle {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: #616e7c;
+}
+
+/* ===== Próximos meses ===== */
+.lista-meses {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fila-mes {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #e4e7eb;
+}
+
+.fila-mes:last-child {
+  border-bottom: none;
+}
+
+.fila-mes.total {
+  font-weight: 700;
+  border-top: 2px solid #c3c8cf;
+}
+
+.fila-mes .mes {
+  font-weight: 600;
+}
+
+.fila-mes .valor {
+  text-align: right;
 }
 
 /* ===== Lista de movimientos ===== */
