@@ -32,79 +32,111 @@
     </form>
   </section>
 
-  <!-- ===== PANTALLA 2: PRINCIPAL ===== -->
+  <!-- ===== PANTALLA 2: LA APP (con sesión iniciada) ===== -->
   <section id="pantalla-principal" class="pantalla oculta">
     <header class="barra">
       <span id="saludo"></span>
       <button id="boton-salir" class="boton-secundario">Salir</button>
     </header>
 
-    <!-- ----- Saldo: quién le debe a quién ----- -->
-    <div class="tarjeta saldo">
-      <span class="saldo-titulo">Saldo</span>
-      <p id="saldo-texto" class="saldo-texto">Cargando…</p>
-    </div>
-
-    <!-- ----- Formulario para anotar un movimiento ----- -->
-    <form id="form-movimiento" class="tarjeta">
-      <h2>Nuevo movimiento</h2>
-
-      <!-- Tipo: gasto o pago de deuda -->
-      <div class="selector">
-        <label class="opcion"><input type="radio" name="tipo" value="gasto" checked> Gasto</label>
-        <label class="opcion"><input type="radio" name="tipo" value="pago"> Pago de deuda</label>
+    <!-- ===== VISTA: INICIO (saldo + menú) ===== -->
+    <div id="vista-inicio" class="vista">
+      <div class="tarjeta saldo">
+        <span class="saldo-titulo">Saldo</span>
+        <p id="saldo-texto" class="saldo-texto">Cargando…</p>
       </div>
 
-      <label for="mov-descripcion">Descripción</label>
-      <input type="text" id="mov-descripcion" maxlength="80" placeholder="Ej: Supermercado">
-
-      <label for="mov-monto">Monto ($)</label>
-      <input type="text" id="mov-monto" inputmode="numeric" placeholder="0">
-
-      <label for="mov-fecha">Fecha</label>
-      <input type="date" id="mov-fecha" required>
-
-      <label for="mov-pagador" id="etiqueta-pagador">¿Quién pagó?</label>
-      <select id="mov-pagador"></select>
-
-      <!-- Solo para gastos: cómo se divide -->
-      <div id="bloque-division">
-        <span class="etiqueta">¿Cómo se divide?</span>
-        <div class="selector vertical">
-          <label class="opcion"><input type="radio" name="division" value="mitad" checked> Mitad y mitad</label>
-          <label class="opcion"><input type="radio" name="division" value="total"> Todo le corresponde al otro</label>
-          <label class="opcion"><input type="radio" name="division" value="personalizada"> Personalizada</label>
-        </div>
-
-        <!-- Solo si la división es personalizada -->
-        <div id="bloque-personalizada" class="oculta">
-          <label for="mov-parte" id="etiqueta-parte">Parte del otro ($)</label>
-          <input type="text" id="mov-parte" inputmode="numeric" placeholder="0">
-        </div>
-      </div>
-
-      <!-- Frase que explica qué va a pasar con la deuda -->
-      <p id="resumen" class="resumen"></p>
-
-      <button type="submit" id="boton-guardar">Guardar</button>
-      <p id="mov-mensaje" class="mensaje"></p>
-    </form>
-
-    <!-- ----- Lista de movimientos ----- -->
-    <div class="tarjeta">
-      <h2>Movimientos</h2>
-      <ul id="lista-movimientos" class="lista"></ul>
-      <p id="lista-nota" class="nota"></p>
+      <nav class="menu">
+        <button class="boton-menu destacado" data-ir="nuevo">
+          <span class="menu-icono">＋</span>
+          <span class="menu-texto">Nuevo movimiento</span>
+        </button>
+        <button class="boton-menu" data-ir="movimientos">
+          <span class="menu-icono">☰</span>
+          <span class="menu-texto">Movimientos</span>
+          <span id="contador-movimientos" class="contador"></span>
+        </button>
+        <button class="boton-menu" data-ir="borrados">
+          <span class="menu-icono">↺</span>
+          <span class="menu-texto">Movimientos borrados</span>
+          <span id="cantidad-borrados" class="contador"></span>
+        </button>
+      </nav>
     </div>
 
-    <!-- ----- Registro de borrados (se abre y cierra con un toque) ----- -->
-    <details class="tarjeta borrados">
-      <summary>Movimientos borrados (<span id="cantidad-borrados">0</span>)</summary>
-      <ul id="lista-borrados" class="lista"></ul>
-      <p id="borrados-nota" class="nota"></p>
-    </details>
+    <!-- ===== VISTA: NUEVO MOVIMIENTO ===== -->
+    <div id="vista-nuevo" class="vista oculta">
+      <button class="boton-volver">← Volver</button>
 
-    <!-- ----- Aviso inferior con "Deshacer" ----- -->
+      <form id="form-movimiento" class="tarjeta">
+        <h2>Nuevo movimiento</h2>
+
+        <!-- Tipo: gasto o pago de deuda -->
+        <div class="selector">
+          <label class="opcion"><input type="radio" name="tipo" value="gasto" checked> Gasto</label>
+          <label class="opcion"><input type="radio" name="tipo" value="pago"> Pago de deuda</label>
+        </div>
+
+        <label for="mov-descripcion">Descripción</label>
+        <input type="text" id="mov-descripcion" maxlength="80" placeholder="Ej: Supermercado">
+
+        <label for="mov-monto">Monto ($)</label>
+        <input type="text" id="mov-monto" inputmode="numeric" placeholder="0">
+
+        <label for="mov-fecha">Fecha</label>
+        <input type="date" id="mov-fecha" required>
+
+        <label for="mov-pagador" id="etiqueta-pagador">¿Quién pagó?</label>
+        <select id="mov-pagador"></select>
+
+        <!-- Solo para gastos: cómo se divide -->
+        <div id="bloque-division">
+          <span class="etiqueta">¿Cómo se divide?</span>
+          <div class="selector vertical">
+            <label class="opcion"><input type="radio" name="division" value="mitad" checked> Mitad y mitad</label>
+            <label class="opcion"><input type="radio" name="division" value="total"> Todo le corresponde al otro</label>
+            <label class="opcion"><input type="radio" name="division" value="personalizada"> Personalizada</label>
+          </div>
+
+          <!-- Solo si la división es personalizada -->
+          <div id="bloque-personalizada" class="oculta">
+            <label for="mov-parte" id="etiqueta-parte">Parte del otro ($)</label>
+            <input type="text" id="mov-parte" inputmode="numeric" placeholder="0">
+          </div>
+        </div>
+
+        <!-- Frase que explica qué va a pasar con la deuda -->
+        <p id="resumen" class="resumen"></p>
+
+        <button type="submit" id="boton-guardar">Guardar</button>
+        <p id="mov-mensaje" class="mensaje"></p>
+      </form>
+    </div>
+
+    <!-- ===== VISTA: MOVIMIENTOS ===== -->
+    <div id="vista-movimientos" class="vista oculta">
+      <button class="boton-volver">← Volver</button>
+
+      <div class="tarjeta">
+        <h2>Movimientos</h2>
+        <ul id="lista-movimientos" class="lista"></ul>
+        <p id="lista-nota" class="nota"></p>
+      </div>
+    </div>
+
+    <!-- ===== VISTA: MOVIMIENTOS BORRADOS ===== -->
+    <div id="vista-borrados" class="vista oculta">
+      <button class="boton-volver">← Volver</button>
+
+      <div class="tarjeta">
+        <h2>Movimientos borrados</h2>
+        <p class="explicacion">Se eliminan definitivamente 2 meses después de borrados.</p>
+        <ul id="lista-borrados" class="lista"></ul>
+        <p id="borrados-nota" class="nota"></p>
+      </div>
+    </div>
+
+    <!-- ----- Aviso inferior ("✓ Guardado" o "Se borró… Deshacer") ----- -->
     <div id="aviso" class="aviso oculta">
       <span id="aviso-texto"></span>
       <button id="aviso-deshacer" class="boton-deshacer">Deshacer</button>

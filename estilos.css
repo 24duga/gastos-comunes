@@ -227,14 +227,86 @@ button:disabled {
   border: 1px solid #2f6fde;
 }
 
-/* ===== Registro de borrados ===== */
-.borrados summary {
-  font-weight: 600;
-  cursor: pointer;
+/* ===== Menú de la pantalla de inicio ===== */
+.menu {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 20px;
 }
 
-.borrados[open] summary {
-  margin-bottom: 8px;
+.boton-menu {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0;
+  padding: 18px 16px;
+  font-size: 17px;
+  text-align: left;
+  color: #1f2933;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.boton-menu.destacado {
+  color: #fff;
+  background: #2f6fde;      /* "Nuevo movimiento" es lo más usado: se destaca */
+}
+
+.menu-icono {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  border-radius: 50%;
+  background: #eaf1fd;
+  color: #2f6fde;
+}
+
+.destacado .menu-icono {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.menu-texto {
+  flex: 1;                  /* empuja el contador hacia la derecha */
+}
+
+.contador {
+  min-width: 28px;
+  padding: 2px 8px;
+  font-size: 14px;
+  text-align: center;
+  color: #616e7c;
+  background: #f4f5f7;
+  border-radius: 999px;     /* forma de "pastilla" */
+}
+
+.contador:empty {
+  display: none;
+}
+
+/* ===== Botón Volver ===== */
+.boton-volver {
+  width: auto;
+  margin: 16px 0 0;
+  padding: 8px 4px;
+  color: #2f6fde;
+  background: transparent;
+  font-size: 16px;
+}
+
+.boton-volver + .tarjeta {
+  margin-top: 8px;
+}
+
+.explicacion {
+  margin: -8px 0 8px;
+  font-size: 14px;
+  color: #616e7c;
 }
 
 /* ===== Aviso inferior "Se borró... Deshacer" ===== */

@@ -49,6 +49,7 @@ const textoNotaLista  = document.getElementById("lista-nota");
 // --- Registro de borrados y aviso "Deshacer" ---
 const listaBorrados         = document.getElementById("lista-borrados");
 const textoCantidadBorrados = document.getElementById("cantidad-borrados");
+const contadorMovimientos   = document.getElementById("contador-movimientos");
 const textoNotaBorrados     = document.getElementById("borrados-nota");
 const aviso                 = document.getElementById("aviso");
 const textoAviso            = document.getElementById("aviso-texto");
@@ -250,10 +251,10 @@ formMov.addEventListener("submit", async (evento) => {
     return;
   }
 
-  mostrarMensaje("✓ Guardado", false);
   reiniciarFormulario();
   cargarMovimientos();      // para que el saldo y la lista muestren lo recién guardado
-  setTimeout(() => mostrarMensaje("", false), 3000);   // borra el aviso a los 3 segundos
+  history.back();           // volver al inicio, donde se ve el saldo actualizado
+  mostrarAviso("✓ Guardado", 3);
 });
 
 
@@ -408,6 +409,7 @@ async function cargarMovimientos() {
     mostrarSaldo(calcularSaldo(vigentes));   // ¡el saldo solo cuenta los vigentes!
     dibujarLista(vigentes);
     dibujarBorrados(borrados);
+    contadorMovimientos.textContent = vigentes.length;
   } catch (error) {
     console.error(error);
     textoSaldo.textContent = "No se pudo cargar";
@@ -454,15 +456,20 @@ async function restaurarMovimiento(m) {
 // ----- Aviso inferior con el botón "Deshacer" -----
 let movimientoRecienBorrado = null;
 let temporizadorAviso = null;
-const SEGUNDOS_AVISO = 8;
-
-function mostrarAvisoDeshacer(m) {
-  movimientoRecienBorrado = m;
-  textoAviso.textContent = `Se borró "${m.descripcion}"`;
+// Muestra el aviso inferior durante algunos segundos.
+// Si recibe un movimiento, agrega el botón "Deshacer" para restaurarlo.
+function mostrarAviso(texto, segundos, movimiento = null) {
+  movimientoRecienBorrado = movimiento;
+  textoAviso.textContent = texto;
+  botonDeshacer.classList.toggle("oculta", movimiento === null);
   aviso.classList.remove("oculta");
 
   clearTimeout(temporizadorAviso);   // si había otro aviso, se reemplaza
-  temporizadorAviso = setTimeout(ocultarAviso, SEGUNDOS_AVISO * 1000);
+  temporizadorAviso = setTimeout(ocultarAviso, segundos * 1000);
+}
+
+function mostrarAvisoDeshacer(m) {
+  mostrarAviso(`Se borró "${m.descripcion}"`, 8, m);
 }
 
 function ocultarAviso() {
@@ -506,13 +513,63 @@ botonSalir.addEventListener("click", async () => {
 
 
 // =====================================================
-// 8. VIGILAR CAMBIOS DE SESIÓN
+// 8. NAVEGACIÓN ENTRE VISTAS (inicio, nuevo, movimientos, borrados)
+// =====================================================
+// Cada vista tiene su "dirección" después del # en la URL:
+//   .../gastos-comunes/#nuevo   .../#movimientos   .../#borrados
+// Así el botón "atrás" del teléfono vuelve a la vista anterior
+// en vez de cerrar la app.
+const vistas = {
+  inicio:      document.getElementById("vista-inicio"),
+  nuevo:       document.getElementById("vista-nuevo"),
+  movimientos: document.getElementById("vista-movimientos"),
+  borrados:    document.getElementById("vista-borrados"),
+};
+
+// Muestra la vista que indica el # de la URL (o el inicio si no hay).
+function mostrarVista() {
+  const pedida = location.hash.slice(1);             // "#nuevo" → "nuevo"
+  const nombre = vistas[pedida] ? pedida : "inicio";  // si no existe, al inicio
+  for (const [nombreVista, elemento] of Object.entries(vistas)) {
+    elemento.classList.toggle("oculta", nombreVista !== nombre);
+  }
+  window.scrollTo(0, 0);                              // cada vista parte desde arriba
+}
+
+// Quita el # de la URL sin agregar un paso al historial.
+function limpiarHash() {
+  if (location.hash) history.replaceState(null, "", location.pathname + location.search);
+}
+
+// Botones del menú: cada uno dice a dónde ir en su atributo data-ir.
+document.querySelectorAll("[data-ir]").forEach((boton) => {
+  boton.addEventListener("click", () => {
+    location.hash = boton.dataset.ir;
+  });
+});
+
+// Botones "← Volver": hacen lo mismo que el botón atrás del teléfono.
+document.querySelectorAll(".boton-volver").forEach((boton) => {
+  boton.addEventListener("click", () => history.back());
+});
+
+// Cada vez que cambia el # (por un botón o por el "atrás"), mostrar la vista.
+window.addEventListener("hashchange", mostrarVista);
+
+// Al abrir la app, partir siempre en el inicio.
+limpiarHash();
+
+
+// =====================================================
+// 9. VIGILAR CAMBIOS DE SESIÓN
 // =====================================================
 function actualizarSegunSesion(sesion) {
   if (!sesion) {
     idActual = null;
     desconectarTiempoReal();
     ocultarAviso();
+    limpiarHash();
+    mostrarVista();
     mostrarPantalla("login");
     return;
   }
@@ -531,6 +588,7 @@ function actualizarSegunSesion(sesion) {
     conectarTiempoReal();
   }
   mostrarPantalla("principal");
+  mostrarVista();
 }
 
 cliente.auth.onAuthStateChange((_evento, sesion) => {
@@ -539,7 +597,7 @@ cliente.auth.onAuthStateChange((_evento, sesion) => {
 
 
 // =====================================================
-// 9. TIEMPO REAL: enterarse al instante de lo que anota el otro
+// 10. TIEMPO REAL: enterarse al instante de lo que anota el otro
 // =====================================================
 let canal = null;            // la "línea abierta" con Supabase
 let temporizadorRecarga = null;
@@ -579,7 +637,7 @@ document.addEventListener("visibilitychange", () => {
 
 
 // =====================================================
-// 10. INSTALAR EL SERVICE WORKER (para que sea app instalable)
+// 11. INSTALAR EL SERVICE WORKER (para que sea app instalable)
 // =====================================================
 // Solo funciona cuando la página está publicada (https), no al abrirla
 // con doble clic desde el computador; por eso revisamos el protocolo.
