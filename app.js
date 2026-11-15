@@ -413,6 +413,7 @@ botonSalir.addEventListener("click", async () => {
 function actualizarSegunSesion(sesion) {
   if (!sesion) {
     idActual = null;
+    desconectarTiempoReal();
     mostrarPantalla("login");
     return;
   }
@@ -428,6 +429,7 @@ function actualizarSegunSesion(sesion) {
     llenarPagadores();
     reiniciarFormulario();
     cargarMovimientos();
+    conectarTiempoReal();
   }
   mostrarPantalla("principal");
 }
@@ -438,7 +440,47 @@ cliente.auth.onAuthStateChange((_evento, sesion) => {
 
 
 // =====================================================
-// 9. INSTALAR EL SERVICE WORKER (para que sea app instalable)
+// 9. TIEMPO REAL: enterarse al instante de lo que anota el otro
+// =====================================================
+let canal = null;            // la "línea abierta" con Supabase
+let temporizadorRecarga = null;
+
+// Si llegan varios avisos seguidos (por ejemplo, borrar 3 cosas rápido),
+// esperamos 300 ms y recargamos UNA sola vez en lugar de tres.
+function pedirRecarga() {
+  clearTimeout(temporizadorRecarga);
+  temporizadorRecarga = setTimeout(cargarMovimientos, 300);
+}
+
+function conectarTiempoReal() {
+  if (canal) return;         // ya estaba conectado: no abrir una segunda línea
+  canal = cliente
+    .channel("movimientos-en-vivo")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "movimientos" },  // "*" = insertar, editar o borrar
+      () => pedirRecarga()
+    )
+    .subscribe();
+}
+
+function desconectarTiempoReal() {
+  if (!canal) return;
+  cliente.removeChannel(canal);
+  canal = null;
+}
+
+// Plan B: los teléfonos "duermen" las apps en segundo plano y la línea
+// puede cortarse. Cada vez que la app vuelve a la pantalla, recargamos.
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && idActual) {
+    pedirRecarga();
+  }
+});
+
+
+// =====================================================
+// 10. INSTALAR EL SERVICE WORKER (para que sea app instalable)
 // =====================================================
 // Solo funciona cuando la página está publicada (https), no al abrirla
 // con doble clic desde el computador; por eso revisamos el protocolo.
